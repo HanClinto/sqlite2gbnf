@@ -1,0 +1,172 @@
+# A GBNF grammar to handle select statements in SQLite
+# Most of the grammar here was created with the help of the SQLite documentation: https://www.sqlite.org/lang_select.html
+# I did my best to make it complete, but given my unfamiliarity with some extended features of SQLite, it may not be perfect.
+
+select-statement ::= with-clause? select-core (compound-operator ws select-core)* ordering-clause? limit-clause?
+
+with-clause ::= "WITH " "RECURSIVE "? common-table-expression (", " common-table-expression)* ws
+
+select-core ::= select-core-select | select-core-values
+select-core-select ::= "SELECT " ("ALL " | "DISTINCT ")? result-column (", " result-column)* from-clause? where-clause? group-by-clause? window-clause?
+select-core-values ::= "VALUES " "(" expr (", " expr)* ")"
+
+from-clause ::= ws "FROM " (table-or-subquery (", " table-or-subquery)* | join-clause)
+where-clause ::= ws "WHERE " expr
+group-by-clause ::= ws "GROUP BY " expr (", " expr)* ("HAVING " expr)?
+window-clause ::= ws "WINDOW " window-name "AS " window-defn (", " window-name "AS " window-defn)*
+
+ordering-clause ::= ws "ORDER BY " ordering-term (", " ordering-term)*
+limit-clause ::= ws "LIMIT " expr ("OFFSET " expr)?
+
+result-column ::= "*" | table-name ".*" | expr ( "AS " column-alias )?
+
+column-name-list ::= " (" column-name ("," column-name)* ")"
+
+materialized-option ::= "NOT "? "MATERIALIZED "
+
+table-or-subquery ::=
+      (schema-name ".")? table-name as-alias? indexed-option?
+    | (schema-name ".")? table-function-name "(" expr ")" as-alias?
+    | "(" select-stmt ")" as-alias?
+    | "(" ((table-or-subquery (", " table-or-subquery)*) | join-clause) ")"
+
+indexed-option ::=
+      " INDEXED BY " index-name
+    | " NOT INDEXED"
+
+as-alias ::= " AS "? table-alias
+
+table-function-name ::= identifier
+table-alias ::= identifier
+
+join-clause ::= table-or-subquery (join-operator table-or-subquery join-constraint?)*
+
+join-operator ::=
+    ","
+    | "CROSS "? "JOIN "
+    | "NATURAL "? ("INNER " | ("LEFT " | "RIGHT " | "FULL ") "OUTER "?) "JOIN "
+
+join-constraint ::=
+    " ON " expr
+    | " USING (" column-name ("," column-name)* ")"
+
+
+window-name ::= identifier
+window-defn ::= "(" base-window-name? window-partition-clause? order-by-clause? frame-spec? ")"
+base-window-name ::= identifier
+
+compound-operator ::= "UNION" | "UNION ALL" | "INTERSECT" | "EXCEPT"
+
+# TODO: schema-name.table-name.column-name should be limited to the columns in the table
+expr ::=
+      literal-value
+    | bind-parameter
+    | (schema-name ".")? (table-name ".")? column-name
+    | unary-operator ws expr
+    | expr ws binary-operator ws expr
+    | function-name "(" function-arguments? ")" filter-clause? over-clause?
+    | "(" expr (", " expr)* ")"
+    | "CAST(" expr " AS " type-name ")"
+    | expr "COLLATE " collation-name
+    | expr "NOT "? "LIKE " expr (" ESCAPE " expr)?
+    | expr "NOT "? ("GLOB " | "REGEXP " | "MATCH ") expr
+    | expr "ISNULL"
+    | expr "NOTNULL"
+    | expr "NOT NULL"
+    | expr "IS " "NOT "? ("DISTINCT FROM ")? expr
+    | expr "NOT "? "BETWEEN " expr " AND " expr
+    | expr "NOT "? "IN (" (select-stmt | expr (", " expr)*) ")"
+    | expr "NOT "? "IN " (schema-name ".")? table-name
+    | expr "NOT "? "IN " (schema-name ".")? table-function "(" expr (", " expr)* ")"
+    | "EXISTS "? "(" select-stmt ")"
+    | "NOT EXISTS (" select-stmt ")"
+    | "CASE " expr? (" WHEN " expr " THEN " expr)+ (" ELSE " expr)? " END"
+    | raise-function
+
+unary-operator ::= "-" | "+" | "~" | "NOT"
+binary-operator ::= "+" | "-" | "*" | "/" | "%" | "<<" | ">>" | "&" | "|" | "<" | "<=" | ">" | ">=" | "=" | "==" | "!=" | "<>" | "IS" | "IS NOT" | "IN" | "LIKE" | "GLOB" | "MATCH" | "REGEXP"
+function-name ::= identifier
+
+function-arguments ::=
+    "DISTINCT"? expr ("," expr)* ("ORDER" "BY" ordering-term ("," ordering-term)*)?
+    | "*"
+
+ordering-term ::= expr ("COLLATE " collation-name)? (" ASC" | " DESC")? (" NULLS " ("FIRST" | "LAST"))?
+
+filter-clause ::= " FILTER(WHERE " expr ")"
+
+over-clause ::= " OVER " (window-name | "(" (partition-by-clause? order-by-clause? frame-spec?) ")")
+partition-by-clause ::= "PARTITION BY " expr (", " expr)*
+order-by-clause ::= " ORDER BY " ordering-term (", " ordering-term)*
+
+frame-spec ::= ws frame-spec-type frame-content frame-exclusion?
+
+frame-spec-type ::= "RANGE " | "ROWS " | "GROUPS "
+
+frame-content ::= 
+      "BETWEEN " frame-bound "AND " frame-bound
+    | frame-bound
+
+frame-bound ::=
+      "CURRENT ROW" 
+    | "UNBOUNDED" frame-bound-relative
+    | expr frame-bound-relative
+
+frame-bound-relative ::= " PRECEDING" | " FOLLOWING"
+
+frame-exclusion ::=
+      " EXCLUDE NO OTHERS"
+    | " EXCLUDE CURRENT ROW"
+    | " EXCLUDE GROUP"
+    | " EXCLUDE TIES"
+
+# NOTE: Because of type-affinity in SQLite, we only need to support a small set of types, and don't need to support numeric qualifiers (such as "VARCHAR(255)") on datatypes.
+type-name ::= "TEXT" | "NUMERIC" | "INTEGER" | "REAL" | "BLOB"
+
+collation-name ::= identifier
+
+# TODO: Do we need to add blob-literals?
+literal-value ::= numeric-literal | string-literal | "NULL" | "TRUE" | "FALSE" | "CURRENT_TIME" | "CURRENT_DATE" | "CURRENT_TIMESTAMP"
+
+bind-parameter ::= "?" | "?" digit+ | ":" [a-zA-Z]+ | "@" [a-zA-Z]+ | "$" [a-zA-Z]+ 
+
+base_identifier ::= [a-zA-Z_][a-zA-Z0-9_]*
+quoted_identifier ::= '"' [^"]* '"'
+identifier ::= base_identifier | quoted_identifier
+
+raise-function ::= "RAISE(" ("IGNORE" | (("ROLLBACK" | "ABORT" | "FAIL") ", " string-literal ) ) ")"
+
+numeric-literal ::= 
+        digit+
+        | digit+ "." digit+
+        | "." digit+
+        | digit+ ("E" | "e") ("+" | "-")? digit+
+        | "0x" hexdigit+
+
+string-literal ::= "'" [^']* "'"
+
+digit ::= [0-9]
+hexdigit ::= [0-9a-fA-F]
+letter ::= [A-Za-z]
+
+ws ::= ([ \t\n]+)
+
+# NOTE: The following will be replaced for custom-generated gbnf files that are tailored to a specific database.
+#### BEGIN: DB DATA ####
+
+# NOTE: common-table-expression should be re-written to be more specific to a user's particular database.
+common-table-expression ::= table-name-and-columns "AS " materialized-option? "(" select-stmt ")"
+
+# NOTE: table-name-and-columns should be re-written to be more specific to a user's particular database.
+# NOTE: Should be a list of specific tables and columns
+table-name-and-columns ::= table-name column-name-list?
+
+# NOTE: table-name should be a list of all valid tables in the database
+table-name ::= identifier
+
+# NOTE: column-name should be a list of all valid columns in the database
+column-name ::= identifier
+# NOTE: schema-name should be a list of all valid schemas in the database
+schema-name ::= identifier
+# NOTE: index-name should be a list of all valid indexes in the database
+index-name ::= identifier
