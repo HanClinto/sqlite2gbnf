@@ -30,4 +30,9 @@ Further, by adapting this generalized SQL grammar to our specific SQLite databas
 
 If you want to restrict your generated SQL to your specific database, you can run sqlite2gbnf.py, point it at your local .sqlite file, and it will auto-populate an amended version of sqlite_select.gbnf with information specific to your database schema.
 
+This is obviously intended to work with local models that can do text-to-SQL tasks. Some candidates one might consider are:
 
+* [NaturalSQL 6.7B](https://huggingface.co/cfahlgren1/NaturalSQL-6.7B-v0)
+* [SQLCoder 7B](https://huggingface.co/defog/sqlcoder-7b)
+
+Though as the field of interest in text-to-SQL models grows, this list should continue to grow.
