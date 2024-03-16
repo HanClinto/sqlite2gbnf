@@ -9,7 +9,7 @@
 #    This grammar is designed to be both comprehensive and flexible, capturing a wide range of possible SELECT statements in SQLite while remaining understandable. However, due to the complexity of SQL and SQLite's rich feature set, some advanced features and edge cases may not be fully covered. This grammar can be extended and refined as needed to meet specific requirements or to incorporate additional SQLite features.
 
 # Root rule for a SELECT statement, including subqueries within FROM and WHERE clauses
-root ::= select-statement [;]? ws?
+root ::= select-statement [;]?
 
 # SELECT statement with optional distinct, columns, FROM clause, WHERE clause, JOINs, GROUP BY, ORDER BY, and LIMIT
 select-statement ::= "SELECT " distinct? columns from-clause? where-clause? join-clause* group-by-clause? order-by-clause? limit-clause?

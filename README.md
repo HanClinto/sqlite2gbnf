@@ -36,3 +36,57 @@ This is obviously intended to work with local models that can do text-to-SQL tas
 * [SQLCoder 7B](https://huggingface.co/defog/sqlcoder-7b)
 
 Though as the field of interest in text-to-SQL models grows, this list should continue to grow.
+
+## Example runs:
+
+```
+./gbnf-validator yeschat.ai.gbnf tests/sql1.txt
+Input string is valid according to the grammar.
+
+./gbnf-validator yeschat.ai.gbnf tests/sql2.txt
+Input string is valid according to the grammar.
+
+./gbnf-validator yeschat.ai.gbnf tests/sql3.txt
+Input string is valid according to the grammar.
+
+./gbnf-validator yeschat.ai.gbnf tests/sql4.txt
+Input string is valid according to the grammar.
+
+./gbnf-validator yeschat.ai.gbnf tests/sql5.txt
+Input string is valid according to the grammar.
+
+./gbnf-validator yeschat.ai.gbnf tests/sql6.txt
+Input string is valid according to the grammar.
+
+./gbnf-validator yeschat.ai.gbnf tests/sql7.txt
+Input string is valid according to the grammar.
+
+./gbnf-validator yeschat.ai.gbnf tests/sql8.txt
+Input string is valid according to the grammar.
+
+./gbnf-validator yeschat.ai.gbnf tests/sql9.txt
+Input string is invalid according to the grammar.
+Error: Unexpected character '
+' at position 28
+
+Input string:
+SELECT order_id, order_date,
+  CASE
+    WHEN DATE_PART('month', order_date) BETWEEN 1 AND 3 THEN 'Q1'
+    WHEN DATE_PART('month', order_date) BETWEEN 4 AND 6 THEN 'Q2'
+    WHEN DATE_PART('month', order_date) BETWEEN 7 AND 9 THEN 'Q3'
+    ELSE 'Q4'
+  END AS quarter
+FROM orders
+
+./gbnf-validator yeschat.ai.gbnf tests/sql10.txt
+Input string is invalid according to the grammar.
+Error: Unexpected character '
+' at position 58
+
+Input string:
+SELECT e.employee_id, e.first_name, e.last_name, e.salary,
+  (SELECT AVG(salary) FROM employees WHERE department_id = e.department_id) as dept_avg_salary,
+  RANK() OVER (PARTITION BY e.department_id ORDER BY e.salary DESC) as salary_rank
+FROM employees e
+```
