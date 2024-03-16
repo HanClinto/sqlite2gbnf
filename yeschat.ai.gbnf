@@ -1,0 +1,97 @@
+# Created by this app: https://www.yeschat.ai/en/gpts-2OTolYlldy-Grammar-Architect?nxtPpath=gpts-2OTolYlldy-Grammar-Architect
+
+# Prompt: 
+#    Please create a comprehensive GBNF grammar for complex SQLite SELECT statements, including subqueries, joins, and functions.
+
+# Response: 
+#    Creating a comprehensive GBNF grammar for complex SQLite SELECT statements, including subqueries, joins, and functions, requires a more detailed and nuanced approach to capture the flexibility and complexity of SQLite syntax. This enhanced grammar will include the basics (SELECT, FROM, WHERE, ORDER BY, and LIMIT clauses), as well as JOINs, subqueries, and the use of functions. Given the complexity, the grammar will still be somewhat simplified but more encompassing than the basic version.
+#    This grammar introduces a more complex structure, incorporating the ability to use functions, subqueries, and joins within the SELECT statement. It also includes provisions for using aliases and handling quoted identifiers, which are common in more advanced SQL queries.
+#    This grammar is designed to be both comprehensive and flexible, capturing a wide range of possible SELECT statements in SQLite while remaining understandable. However, due to the complexity of SQL and SQLite's rich feature set, some advanced features and edge cases may not be fully covered. This grammar can be extended and refined as needed to meet specific requirements or to incorporate additional SQLite features.
+
+# Root rule for a SELECT statement, including subqueries within FROM and WHERE clauses
+root ::= select-statement [;]? ws?
+
+# SELECT statement with optional distinct, columns, FROM clause, WHERE clause, JOINs, GROUP BY, ORDER BY, and LIMIT
+select-statement ::= "SELECT " distinct? columns from-clause? where-clause? join-clause* group-by-clause? order-by-clause? limit-clause?
+
+# Optional DISTINCT keyword
+distinct ::= "DISTINCT "?
+
+# Columns to select, either all (*) or a comma-separated list of column names or functions
+columns ::= "*" | column-or-function (", " column-or-function)*
+
+# Column or function
+column-or-function ::= (column | function alias?)
+
+# Individual column name
+column ::= (schema-name ".")? (table-name ".")? ([a-zA-Z_][a-zA-Z0-9_]* | quoted-identifier)
+schema-name ::= [a-zA-Z_][a-zA-Z0-9_]*
+table-name ::= [a-zA-Z_][a-zA-Z0-9_]*
+
+# Function call, simplified to no arguments or single argument
+function ::= [a-zA-Z_][a-zA-Z0-9_]* "(" (column | "*" | ) ")"
+
+# FROM clause specifying the table(s) or subquery to select from
+from-clause ::= ws? "FROM " (tables | subquery) (ws table-alias)?
+
+# Tables, either a single table, a subquery as a table, or a comma-separated list of table names
+tables ::= table (", " table)*
+
+# Individual table name or subquery as table
+table ::= [a-zA-Z_][a-zA-Z0-9_]* | "(" select-statement ")" | quoted-identifier
+
+# Alias for a table or subquery, simplified
+alias ::= ws? ("AS " | "as ")? [a-zA-Z][a-zA-Z0-9_]*
+table-alias ::= ws? ("AS " | "as ")? [a-zA-Z]
+
+# WHERE clause with a condition, including subquery conditions
+where-clause ::= ws? "WHERE " condition
+
+# JOIN clause, simplified to INNER JOIN
+join-clause ::= ws? "JOIN " table (ws alias)? " ON " condition
+
+# Condition, allowing column comparisons, IN, EXISTS, and subquery conditions
+condition ::= (
+        column ws? comparator ws? (value | column)
+        | column " IN (" select-statement ")"
+        | "EXISTS (" select-statement ")"
+    )
+
+# Comparator, basic options
+comparator ::= "=" | "<>" | "<" | ">" | "<=" | ">="
+
+# Value, numeric, quoted string, or subquery
+value ::= number | quoted-string | "(" select-statement ")"
+
+# Subquery structure
+subquery ::= "(" select-statement ")"
+
+# Numeric value, integer or float for simplicity
+number ::= "-"? [0-9]+ ("." [0-9]+)?
+
+# Quoted string, simplifying to anything between single quotes
+quoted-string ::= "'" [^']* "'"
+
+# GROUP BY clause, specifying columns for grouping
+group-by-clause ::= ws? "GROUP BY " group-columns
+
+# Grouping columns, either a single column or a comma-separated list
+group-columns ::= column (", " column)*
+
+# ORDER BY clause, specifying column sorting
+order-by-clause ::= ws? "ORDER BY " order-columns
+
+# Ordering columns, either a single column or a comma-separated list, with optional direction
+order-columns ::= order-column (", " order-column)*
+
+# Order by a single column, optionally with ASC or DESC
+order-column ::= column (" ASC" | " DESC")?
+
+# LIMIT clause, to limit the number of results, with optional OFFSET
+limit-clause ::= ws? "LIMIT " number (" OFFSET " number)?
+
+# Quoted identifier for cases where identifiers include spaces or other special characters
+quoted-identifier ::= ["] [^"]* ["]
+
+# Optional whitespace, for better readability in the grammar
+ws ::= [ \t\n]*
