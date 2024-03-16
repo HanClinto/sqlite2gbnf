@@ -1,0 +1,3 @@
+SELECT department, COUNT(*) as num_employees, AVG(salary) as avg_salary
+FROM employees
+GROUP BY department

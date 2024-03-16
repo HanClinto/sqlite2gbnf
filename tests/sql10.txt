@@ -1,0 +1,4 @@
+SELECT e.employee_id, e.first_name, e.last_name, e.salary,
+  (SELECT AVG(salary) FROM employees WHERE department_id = e.department_id) as dept_avg_salary,
+  RANK() OVER (PARTITION BY e.department_id ORDER BY e.salary DESC) as salary_rank
+FROM employees e

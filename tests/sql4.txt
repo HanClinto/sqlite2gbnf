@@ -1,0 +1,4 @@
+SELECT customer_id, order_date, total_amount
+FROM orders
+ORDER BY total_amount DESC
+LIMIT 10

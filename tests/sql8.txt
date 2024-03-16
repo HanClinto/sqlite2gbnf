@@ -1,0 +1,5 @@
+SELECT e."first_name", e."last_name", d."department_name", p."project_name"
+FROM "employees" e
+JOIN "departments" d ON e."department_id" = d."department_id"
+JOIN "project_assignments" pa ON e."employee_id" = pa."employee_id"
+JOIN "projects" p ON pa."project_id" = p."project_id"

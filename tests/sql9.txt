@@ -1,0 +1,8 @@
+SELECT order_id, order_date,
+  CASE 
+    WHEN DATE_PART('month', order_date) BETWEEN 1 AND 3 THEN 'Q1'
+    WHEN DATE_PART('month', order_date) BETWEEN 4 AND 6 THEN 'Q2'
+    WHEN DATE_PART('month', order_date) BETWEEN 7 AND 9 THEN 'Q3'
+    ELSE 'Q4'
+  END AS quarter
+FROM orders
